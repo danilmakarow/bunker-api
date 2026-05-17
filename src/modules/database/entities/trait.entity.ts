@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, Entity, Index } from 'typeorm';
 
-import { BaseEntity } from './base.entity';
+import { ContentEntity } from './content.entity';
 import { PolarityEnum } from './enums/polarity.enum';
 import { TraitKindEnum } from './enums/trait-kind.enum';
 
@@ -12,7 +12,7 @@ import { TraitKindEnum } from './enums/trait-kind.enum';
  */
 @Index('IDX_trait_kind', ['kind'])
 @Entity('trait')
-export class Trait extends BaseEntity {
+export class Trait extends ContentEntity {
   @Column({ type: 'enum', enum: TraitKindEnum })
   @ApiProperty({ enum: TraitKindEnum })
   kind: TraitKindEnum;

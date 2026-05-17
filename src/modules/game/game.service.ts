@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager, EntityTarget, IsNull } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  EntityTarget,
+  FindOptionsWhere,
+  IsNull,
+} from 'typeorm';
 
 import {
   BIOLOGY_REVEAL_ATTRIBUTES,
@@ -17,7 +23,7 @@ import {
   ShelterResponseDto,
   TraitResponseDto,
 } from './dto';
-import { randomPick } from './utils/random.util';
+import { weightedPick } from './utils/random.util';
 import { BadRequestException } from '@/exceptions/bad-request.exception';
 import { ConflictException } from '@/exceptions/conflict.exception';
 import { EntityNotFoundException } from '@/exceptions/entity-not-found.exception';
@@ -95,32 +101,65 @@ export class GameService {
   }
 
   /**
-   * Draws a uniformly-random row from a content table. Throws when the pool
-   * is empty so a misconfigured seed surfaces as a clear server error.
+   * Loads every enabled+positive-weight row from a content table and draws one
+   * via weighted random. Disabled rows (`enabled = false`) and zero-weight
+   * rows are excluded. Throws 409 when nothing draws so a misconfigured pool
+   * surfaces as a clear admin-facing error rather than a silent fallback.
    */
-  private async pickRandom<TEntity extends { id: string }>(
+  private async pickWeighted<
+    TEntity extends { id: string; enabled: boolean; weight: number },
+  >(
     manager: EntityManager,
     target: EntityTarget<TEntity>,
     label: string,
   ): Promise<TEntity> {
-    const all = await manager.find(target);
+    const pool = await manager.find(target, {
+      where: { enabled: true } as FindOptionsWhere<TEntity>,
+    });
+    const eligible = pool.filter((row) => row.weight > 0);
 
-    if (!all.length) {
+    if (!eligible.length) {
       throw new ConflictException(
-        `Content table "${label}" is empty; cannot start the game.`,
+        `Content pool "${label}" has no enabled rows with weight > 0; cannot start the game.`,
       );
     }
 
-    return randomPick(all);
+    return weightedPick(eligible);
   }
 
   /**
-   * Groups traits by kind so we can draw per-slot from pre-loaded pools.
+   * Returns the enabled+positive-weight rows from a biology axis, or throws
+   * 409 when nothing remains — the start-game caller relies on this for the
+   * "every axis must have at least one drawable row" precondition.
+   */
+  private async loadBiologyPool<
+    TEntity extends { id: string; enabled: boolean; weight: number },
+  >(
+    manager: EntityManager,
+    target: EntityTarget<TEntity>,
+    label: string,
+  ): Promise<TEntity[]> {
+    const pool = await manager.find(target, {
+      where: { enabled: true } as FindOptionsWhere<TEntity>,
+    });
+    const eligible = pool.filter((row) => row.weight > 0);
+
+    if (!eligible.length) {
+      throw new ConflictException(
+        `Biology axis "${label}" has no enabled rows with weight > 0; cannot start the game.`,
+      );
+    }
+
+    return eligible;
+  }
+
+  /**
+   * Groups enabled+positive-weight traits by kind for per-slot weighted draws.
    */
   private async loadTraitsByKind(
     manager: EntityManager,
   ): Promise<Record<TraitKindEnum, Trait[]>> {
-    const all = await manager.find(Trait);
+    const all = await manager.find(Trait, { where: { enabled: true } });
     const byKind = {} as Record<TraitKindEnum, Trait[]>;
 
     for (const kind of Object.values(TraitKindEnum)) {
@@ -128,7 +167,9 @@ export class GameService {
     }
 
     for (const trait of all) {
-      byKind[trait.kind].push(trait);
+      if (trait.weight > 0) {
+        byKind[trait.kind].push(trait);
+      }
     }
 
     return byKind;
@@ -136,7 +177,8 @@ export class GameService {
 
   /**
    * Creates a PlayerCharacter and its trait rows for a single participant.
-   * Empty trait pools (notably CONDITION_CARD) are silently skipped.
+   * Every kind in `TRAIT_DRAW_COUNTS` must have at least one eligible card —
+   * the precondition is checked once before any character is drawn.
    */
   private async drawCharacterForParticipant(
     manager: EntityManager,
@@ -154,11 +196,11 @@ export class GameService {
     const character = manager.create(PlayerCharacter, {
       roomId: options.roomId,
       userId: options.participant.userId,
-      ageId: randomPick(options.ageOptions).id,
-      weightId: randomPick(options.weightOptions).id,
-      sexId: randomPick(options.sexOptions).id,
-      genderId: randomPick(options.genderOptions).id,
-      raceId: randomPick(options.raceOptions).id,
+      ageId: weightedPick(options.ageOptions).id,
+      weightId: weightedPick(options.weightOptions).id,
+      sexId: weightedPick(options.sexOptions).id,
+      genderId: weightedPick(options.genderOptions).id,
+      raceId: weightedPick(options.raceOptions).id,
     });
 
     await manager.save(PlayerCharacter, character);
@@ -169,12 +211,8 @@ export class GameService {
     ][]) {
       const pool = options.traitsByKind[kind];
 
-      if (!pool?.length) {
-        continue;
-      }
-
       for (let draw = 0; draw < count; draw += 1) {
-        const trait = randomPick(pool);
+        const trait = weightedPick(pool);
         const characterTrait = manager.create(PlayerCharacterTrait, {
           playerCharacterId: character.id,
           traitId: trait.id,
@@ -469,12 +507,12 @@ export class GameService {
         );
       }
 
-      const apocalypse = await this.pickRandom(
+      const apocalypse = await this.pickWeighted(
         manager,
         Apocalypse,
         'apocalypse',
       );
-      const shelter = await this.pickRandom(manager, Shelter, 'shelter');
+      const shelter = await this.pickWeighted(manager, Shelter, 'shelter');
       const [
         ageOptions,
         weightOptions,
@@ -482,26 +520,25 @@ export class GameService {
         genderOptions,
         raceOptions,
       ] = await Promise.all([
-        manager.find(BiologyAge),
-        manager.find(BiologyWeight),
-        manager.find(BiologySex),
-        manager.find(BiologyGender),
-        manager.find(BiologyRace),
+        this.loadBiologyPool(manager, BiologyAge, 'biology_age'),
+        this.loadBiologyPool(manager, BiologyWeight, 'biology_weight'),
+        this.loadBiologyPool(manager, BiologySex, 'biology_sex'),
+        this.loadBiologyPool(manager, BiologyGender, 'biology_gender'),
+        this.loadBiologyPool(manager, BiologyRace, 'biology_race'),
       ]);
 
-      if (
-        !ageOptions.length ||
-        !weightOptions.length ||
-        !sexOptions.length ||
-        !genderOptions.length ||
-        !raceOptions.length
-      ) {
-        throw new ConflictException(
-          'One or more biology pools are empty; cannot start the game.',
-        );
-      }
-
       const traitsByKind = await this.loadTraitsByKind(manager);
+
+      for (const [kind, count] of Object.entries(TRAIT_DRAW_COUNTS) as [
+        TraitKindEnum,
+        number,
+      ][]) {
+        if (count > 0 && !traitsByKind[kind]?.length) {
+          throw new ConflictException(
+            `Trait pool "${kind}" has no enabled rows with weight > 0; cannot start the game.`,
+          );
+        }
+      }
       const adminParticipant = joinedParticipants.find(
         (participant) => participant.userId === admin.id,
       );

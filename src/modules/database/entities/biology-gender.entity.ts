@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, Entity } from 'typeorm';
 
-import { BaseEntity } from './base.entity';
+import { ContentEntity } from './content.entity';
 
 /**
  * Pool of gender/orientation labels a PlayerCharacter can draw from. Seeded
@@ -9,7 +9,7 @@ import { BaseEntity } from './base.entity';
  * `BiologyGender` (TASK.md §3.3) but the data set is orientation.
  */
 @Entity('biology_gender')
-export class BiologyGender extends BaseEntity {
+export class BiologyGender extends ContentEntity {
   @Column({ type: 'varchar' })
   @ApiProperty({ example: 'Гетеросексуал — потяг до протилежної статі' })
   valueUk: string;

@@ -15,4 +15,7 @@ export class MeResponseDto {
 
   @ApiProperty({ example: 'https://example.com/avatar.jpg', nullable: true })
   avatarUrl: string | null;
+
+  @ApiProperty({ example: false })
+  isAdmin: boolean;
 }
