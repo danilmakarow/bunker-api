@@ -5,8 +5,11 @@ import {
 
 /**
  * Per-player trait counts at game start (TASK.md §6.1 — locked in §10).
- * CONDITION_CARD has no source content yet, so the draw is skipped when its
- * pool is empty; the slot will be filled once content is supplied.
+ * Every non-zero count requires the matching trait pool to contain at least
+ * one enabled row with `weight > 0`; otherwise `GameService.startGame` aborts
+ * with 409 E_CONFLICT. Admins manage the per-row enabled/weight flags from
+ * the backoffice (CONDITION_CARD therefore needs at least one row enabled
+ * before a game can be started).
  */
 export const TRAIT_DRAW_COUNTS: Record<TraitKindEnum, number> = {
   [TraitKindEnum.HEALTH]: 1,

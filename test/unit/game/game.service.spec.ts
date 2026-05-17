@@ -123,6 +123,8 @@ const apocalypse: Apocalypse = {
   descriptionUk: 'Опис',
   populationRemainderUk: '30%',
   polarity: PolarityEnum.NEUTRAL,
+  enabled: true,
+  weight: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -135,16 +137,33 @@ const shelter: Shelter = {
   equipmentUk: 'Спальні',
   suppliesUk: 'Криниця',
   polarity: PolarityEnum.POSITIVE,
+  enabled: true,
+  weight: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
 
 const biologyEntries = {
-  age: [{ id: 'age-1', valueUk: '23 роки' } as BiologyAge],
-  weight: [{ id: 'w-1', valueUk: '60 кг' } as BiologyWeight],
-  sex: [{ id: 's-1', valueUk: 'Чоловік' } as BiologySex],
-  gender: [{ id: 'g-1', valueUk: 'Гетеро' } as BiologyGender],
-  race: [{ id: 'r-1', valueUk: 'Українець' } as BiologyRace],
+  age: [
+    { id: 'age-1', valueUk: '23 роки', enabled: true, weight: 1 } as BiologyAge,
+  ],
+  weight: [
+    { id: 'w-1', valueUk: '60 кг', enabled: true, weight: 1 } as BiologyWeight,
+  ],
+  sex: [
+    { id: 's-1', valueUk: 'Чоловік', enabled: true, weight: 1 } as BiologySex,
+  ],
+  gender: [
+    { id: 'g-1', valueUk: 'Гетеро', enabled: true, weight: 1 } as BiologyGender,
+  ],
+  race: [
+    {
+      id: 'r-1',
+      valueUk: 'Українець',
+      enabled: true,
+      weight: 1,
+    } as BiologyRace,
+  ],
 };
 
 const trait = (overrides: Partial<Trait>): Trait => ({
@@ -153,6 +172,8 @@ const trait = (overrides: Partial<Trait>): Trait => ({
   polarity: PolarityEnum.POSITIVE,
   titleUk: 'X',
   descriptionUk: null,
+  enabled: true,
+  weight: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
@@ -168,6 +189,7 @@ const traitPool: Trait[] = [
   trait({ kind: TraitKindEnum.PERSONAL_FACT, titleUk: 'pf' }),
   trait({ kind: TraitKindEnum.ACTION_CARD, titleUk: 'a1' }),
   trait({ kind: TraitKindEnum.ACTION_CARD, titleUk: 'a2' }),
+  trait({ kind: TraitKindEnum.CONDITION_CARD, titleUk: 'cc1' }),
 ];
 
 const adminCharacter = {
