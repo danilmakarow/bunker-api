@@ -1,0 +1,15 @@
+/**
+ * Stable, English-only error codes surfaced in the unified response envelope.
+ */
+export enum ErrorCodesEnum {
+  UNKNOWN = 'E_UNKNOWN',
+  BAD_REQUEST = 'E_BAD_REQUEST',
+  VALIDATION = 'E_VALIDATION',
+  UNAUTHORIZED = 'E_UNAUTHORIZED',
+  FORBIDDEN = 'E_FORBIDDEN',
+  NOT_FOUND = 'E_NOT_FOUND',
+  ENTITY_NOT_FOUND = 'E_ENTITY_NOT_FOUND',
+  CONFLICT = 'E_CONFLICT',
+  INTERNAL_SERVER_ERROR = 'E_INTERNAL_SERVER_ERROR',
+  QUERY_FAILURE = 'E_QUERY_FAILURE',
+}
