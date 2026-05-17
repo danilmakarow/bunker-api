@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "mkdir -p public",
+  "buildCommand": "mkdir -p public && echo '<!doctype html><title>bunker-api</title>bunker-api: routes live under <a href=\"/api\">/api</a>.' > public/index.html",
   "outputDirectory": "public",
   "functions": {
     "api/index.ts": {
