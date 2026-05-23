@@ -1,7 +1,5 @@
 // Sentry must be initialised first.
-import '../src/config/sentry.config';
-// Load Express.Request augmentations (user, requestStorage).
-import '../src/global-types';
+import '../dist/config/sentry.config';
 
 import type { IncomingMessage, ServerResponse } from 'http';
 
@@ -11,10 +9,10 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 
-import { AppModule } from '../src/app.module';
-import { EnvironmentVariables } from '../src/config/env.config';
-import { initializeSwagger } from '../src/config/swagger.config';
-import { AppLogger } from '../src/modules/logger/app-logger';
+import { AppModule } from '../dist/app.module';
+import { EnvironmentVariables } from '../dist/config/env.config';
+import { initializeSwagger } from '../dist/config/swagger.config';
+import { AppLogger } from '../dist/modules/logger/app-logger';
 
 type ExpressHandler = (req: IncomingMessage, res: ServerResponse) => void;
 
