@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
-import { default as Sentry } from '@sentry/nestjs';
+import { init } from '@sentry/nestjs';
+import * as Sentry from '@sentry/node';
 import { eventLoopBlockIntegration } from '@sentry/node-native';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
@@ -15,7 +16,7 @@ const isSentryEnabled = configService.get('SENTRY_ENABLE') === 'true';
 if (sentryDsn && isSentryEnabled) {
   logger.log('Sentry is initialized');
 
-  Sentry.init({
+  init({
     dsn: sentryDsn,
     integrations: [
       nodeProfilingIntegration(),

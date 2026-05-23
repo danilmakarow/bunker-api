@@ -2,12 +2,11 @@ import { inspect } from 'util';
 
 import { Injectable, LoggerService } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { createSentryWinstonTransport } from '@sentry/node';
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 import winston, { createLogger, Logger as WinstonLogger } from 'winston';
 import * as Transport from 'winston-transport';
 import TransportStream from 'winston-transport';
-
-import { Sentry } from '../../config/sentry.config';
 
 /**
  * Winston-backed Nest logger with optional Sentry transport.
@@ -39,7 +38,7 @@ export class AppLogger implements LoggerService {
 
     if (process.env.SENTRY_DSN && process.env.SENTRY_ENABLE === 'true') {
       const SentryWinstonTransport =
-        Sentry.createSentryWinstonTransport(TransportStream);
+        createSentryWinstonTransport(TransportStream);
 
       transports.push(new SentryWinstonTransport());
     }

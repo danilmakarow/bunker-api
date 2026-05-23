@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
+/// <reference types="express-serve-static-core" />
 import { TypedMap } from './common/types/typed-map.type';
+import { GoogleProfilePayload } from '@/modules/auth/types/google-profile.type';
 import { User as UserEntity } from '@/modules/database/entities';
 
 declare global {
@@ -12,6 +14,7 @@ declare global {
       requestStorage: TypedMap<{
         user: UserEntity | undefined;
       }>;
+      user?: GoogleProfilePayload | UserEntity;
     }
   }
 }

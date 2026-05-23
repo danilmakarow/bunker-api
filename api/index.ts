@@ -1,5 +1,7 @@
 // Sentry must be initialised first.
 import '../src/config/sentry.config';
+// Load Express.Request augmentations (user, requestStorage).
+import '../src/global-types';
 
 import type { IncomingMessage, ServerResponse } from 'http';
 
