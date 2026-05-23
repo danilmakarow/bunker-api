@@ -36,6 +36,7 @@ describe('AuthService', () => {
         email: 'player@example.com',
         name: 'Player One',
         avatarUrl: 'https://example.com/avatar.jpg',
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -45,6 +46,7 @@ describe('AuthService', () => {
         name: user.name,
         email: user.email,
         avatarUrl: user.avatarUrl,
+        isAdmin: false,
       });
     });
   });
@@ -64,6 +66,7 @@ describe('AuthService', () => {
         email: profile.email,
         name: profile.name,
         avatarUrl: profile.avatarUrl,
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -97,6 +100,7 @@ describe('AuthService', () => {
         email: 'old@example.com',
         name: 'Old Name',
         avatarUrl: null,
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

@@ -68,11 +68,17 @@ export class GameController {
     @Headers('if-none-match') ifNoneMatch: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<GameSnapshotResponseDto | void> {
+    if (ifNoneMatch !== undefined) {
+      const version = await this.gameService.peekVersion(code, user);
+
+      if (applyVersionEtag(response, ifNoneMatch, version)) {
+        return;
+      }
+    }
+
     const snapshot = await this.gameService.getSnapshot(code, user);
 
-    if (applyVersionEtag(response, ifNoneMatch, snapshot.version)) {
-      return;
-    }
+    applyVersionEtag(response, undefined, snapshot.version);
 
     return snapshot;
   }

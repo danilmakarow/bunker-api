@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { Room } from '../entities';
-import { RoomRepository } from '../repositories';
+import { RoomPollState, RoomRepository } from '../repositories';
 import { BaseDatabaseService } from './base-database.service';
 
 /**
@@ -20,6 +20,15 @@ export class RoomDatabaseService extends BaseDatabaseService<Room> {
    */
   findByCode(code: string) {
     return this.roomRepository.getByCode(code);
+  }
+
+  /**
+   * Cheap poll probe: the room version + caller membership, without loading
+   * the participant graph. Used by the snapshot endpoints to answer an
+   * `If-None-Match` poll. Returns null when no room has the given code.
+   */
+  getPollState(code: string, userId: string): Promise<RoomPollState | null> {
+    return this.roomRepository.getPollState(code, userId);
   }
 
   /**

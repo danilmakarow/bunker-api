@@ -7,6 +7,7 @@ import { SentryModule } from '@sentry/nestjs/setup';
 
 import { AppController } from './app.controller';
 import { AuthModule } from './modules/auth/auth.module';
+import { BackofficeModule } from './modules/backoffice/backoffice.module';
 import { DatabaseModule } from './modules/database/database.module';
 import { GameModule } from './modules/game/game.module';
 import { LoggerModule } from './modules/logger/logger.module';
@@ -43,6 +44,7 @@ import { UnifyResponseService } from '@/services/unify-response.service';
     AuthModule,
     RoomsModule,
     GameModule,
+    BackofficeModule,
   ],
   controllers: [AppController],
   providers: [

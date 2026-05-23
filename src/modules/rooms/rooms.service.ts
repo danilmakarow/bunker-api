@@ -341,6 +341,31 @@ export class RoomsService {
   }
 
   /**
+   * Cheap poll probe for the room snapshot: resolves the current version
+   * without loading the participant graph, so an unchanged poll can
+   * short-circuit to 304. Enforces the same membership access check as
+   * getSnapshot — and because every mutation bumps the version, a matching
+   * ETag implies the caller's access has not changed.
+   */
+  async peekVersion(code: string, user: User): Promise<number> {
+    const normalisedCode = normaliseRoomCode(code);
+    const pollState = await this.roomDatabaseService.getPollState(
+      normalisedCode,
+      user.id,
+    );
+
+    if (!pollState) {
+      throw new EntityNotFoundException(Room);
+    }
+
+    if (!pollState.isMember) {
+      throw new ForbiddenException('You are not a participant of this room.');
+    }
+
+    return pollState.version;
+  }
+
+  /**
    * Voluntary leave. Works in both LOBBY and IN_GAME. If the caller was admin,
    * promotes the longest-tenured remaining JOINED player; transitions to
    * ABANDONED when the last participant leaves.

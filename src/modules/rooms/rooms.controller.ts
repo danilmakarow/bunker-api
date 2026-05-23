@@ -64,11 +64,17 @@ export class RoomsController {
     @Headers('if-none-match') ifNoneMatch: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<RoomSnapshotResponseDto | void> {
+    if (ifNoneMatch !== undefined) {
+      const version = await this.roomsService.peekVersion(code, user);
+
+      if (applyVersionEtag(response, ifNoneMatch, version)) {
+        return;
+      }
+    }
+
     const snapshot = await this.roomsService.getSnapshot(code, user);
 
-    if (applyVersionEtag(response, ifNoneMatch, snapshot.version)) {
-      return;
-    }
+    applyVersionEtag(response, undefined, snapshot.version);
 
     return snapshot;
   }

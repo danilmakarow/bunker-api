@@ -1,8 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
-import { ParticipantStatusEnum, Room } from '../entities';
+import { ParticipantStatusEnum, Room, RoomParticipant } from '../entities';
 import { BaseRepository } from './base.repository';
+
+/**
+ * Lightweight poll-probe projection: the room's current version plus whether
+ * the caller is a JOINED participant. Lets the snapshot endpoints answer a
+ * `If-None-Match` poll without loading the participant/character/reveal graph.
+ */
+export interface RoomPollState {
+  version: number;
+  isMember: boolean;
+}
 
 /**
  * TypeORM repository for Room. Read helpers live here so the service layer
@@ -20,6 +30,44 @@ export class RoomRepository extends BaseRepository<Room> {
    */
   getByCode(code: string): Promise<Room | null> {
     return this.findOne({ where: { code } });
+  }
+
+  /**
+   * Cheap poll probe: returns the room version and whether `userId` is a
+   * JOINED participant, in a single correlated query (no participant/user
+   * join). Returns null when no room has the given code.
+   */
+  async getPollState(
+    code: string,
+    userId: string,
+  ): Promise<RoomPollState | null> {
+    const raw = await this.createQueryBuilder('room')
+      .select('room.version', 'version')
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(1)')
+            .from(RoomParticipant, 'participant')
+            .where('participant.roomId = room.id')
+            .andWhere('participant.userId = :pollUserId')
+            .andWhere('participant.status = :pollJoinedStatus'),
+        'memberCount',
+      )
+      .where('room.code = :pollCode', { pollCode: code })
+      .setParameters({
+        pollUserId: userId,
+        pollJoinedStatus: ParticipantStatusEnum.JOINED,
+      })
+      .getRawOne<{ version: number; memberCount: string }>();
+
+    if (!raw) {
+      return null;
+    }
+
+    return {
+      version: Number(raw.version),
+      isMember: Number(raw.memberCount) > 0,
+    };
   }
 
   /**

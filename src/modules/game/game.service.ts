@@ -622,6 +622,32 @@ export class GameService {
   }
 
   /**
+   * Cheap poll probe for the game snapshot: resolves the current version
+   * without loading the character/reveal graph, so an unchanged poll can
+   * short-circuit to 304. Enforces the same membership access check as the
+   * full snapshot; the IN_GAME/FINISHED status and character preconditions
+   * held when the caller obtained the matching ETag and any change to them
+   * bumps the version, so a version match is sufficient to serve a 304.
+   */
+  async peekVersion(code: string, user: User): Promise<number> {
+    const normalisedCode = normaliseRoomCode(code);
+    const pollState = await this.roomDatabaseService.getPollState(
+      normalisedCode,
+      user.id,
+    );
+
+    if (!pollState) {
+      throw new EntityNotFoundException(Room);
+    }
+
+    if (!pollState.isMember) {
+      throw new ForbiddenException('You are not a participant of this room.');
+    }
+
+    return pollState.version;
+  }
+
+  /**
    * Reveals one of the caller's own attributes (TASK.md §3.5 / §4.3).
    * Idempotent: if the same (attribute, traitId) was already revealed the
    * existing row is reused and the room version stays put.
