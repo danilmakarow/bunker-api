@@ -21,13 +21,15 @@ export class AppLogger implements LoggerService {
 
     ConfigModule.forRoot();
 
+    const isProduction = process.env.NODE_ENV === 'production';
+
     transports.push(
       new winston.transports.Console({
         format: winston.format.combine(
           winston.format.timestamp(),
           winston.format.ms(),
           nestWinstonModuleUtilities.format.nestLike('Bunker', {
-            colors: true,
+            colors: !isProduction,
             prettyPrint: true,
             processId: true,
             appName: true,

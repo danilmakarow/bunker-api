@@ -62,6 +62,7 @@ const getHandler = async (): Promise<ExpressHandler> => {
   if (!bootstrapPromise) {
     bootstrapPromise = bootstrap().then((handler) => {
       cachedHandler = handler;
+
       return handler;
     });
   }
@@ -78,5 +79,6 @@ export default async (
   res: ServerResponse,
 ): Promise<void> => {
   const handler = await getHandler();
+
   handler(req, res);
 };
