@@ -29,6 +29,9 @@ export const getDatabaseConfig = (
     logging: configService.get('DB_LOGGING', { infer: true }),
   };
 
+  console.log('Starting with config');
+  console.log();
+
   const disableSsl = configService.get('DB_DISABLE_SSL_AUTH', { infer: true });
 
   if (disableSsl) {

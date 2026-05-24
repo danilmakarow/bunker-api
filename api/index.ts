@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { DataSource } from 'typeorm';
 
 import { AppModule } from '../dist/app.module';
 import { EnvironmentVariables } from '../dist/config/env.config';
@@ -37,6 +38,7 @@ const bootstrap = async (): Promise<ExpressHandler> => {
 
   const configService = app.get(ConfigService<EnvironmentVariables>);
   const frontendUrl = configService.get('FRONTEND_URL', { infer: true })!;
+  const logger = app.get(AppLogger);
 
   app.setGlobalPrefix('api');
   app.use(cookieParser());
@@ -46,7 +48,40 @@ const bootstrap = async (): Promise<ExpressHandler> => {
 
   await app.init();
 
+  await runPendingMigrations(app.get(DataSource), logger);
+
+  logger.log(`Bunker API started in ${configService.get('NODE_ENV')} mode`);
+
   return app.getHttpAdapter().getInstance() as ExpressHandler;
+};
+
+/**
+ * Runs any pending TypeORM migrations against the live DataSource.
+ * Called once per cold start (since `bootstrap()` is cached). Neon's advisory
+ * locks make concurrent starts safe — at most one applies, the rest see "none
+ * pending". Throws on failure so the function crashes instead of serving
+ * requests against a half-migrated schema.
+ */
+const runPendingMigrations = async (
+  dataSource: DataSource,
+  logger: AppLogger,
+): Promise<void> => {
+  try {
+    const applied = await dataSource.runMigrations({ transaction: 'each' });
+
+    if (applied.length === 0) {
+      logger.log('No pending migrations');
+
+      return;
+    }
+
+    logger.log(
+      `Applied ${applied.length} migration(s): ${applied.map((m) => m.name).join(', ')}`,
+    );
+  } catch (error) {
+    logger.error('Migration run failed', error);
+    throw error;
+  }
 };
 
 /**
